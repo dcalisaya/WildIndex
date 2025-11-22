@@ -25,4 +25,4 @@ requests>=2.31.0
 pandas>=2.1.0
 
 # YOLOv5 dependencies
-huggingface_hub==0.19.4
+huggingface_hub>=0.23.0

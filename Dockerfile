@@ -22,6 +22,10 @@ COPY requirements.txt .
 # Nota: Ultralytics ya trae torch, torchvision, opencv, pandas, etc.
 # Downgrade setuptools to avoid "Multiple top-level packages" error with YOLOv5 git install
 RUN pip install --no-cache-dir "setuptools<70.0.0" wheel
+
+# Install YOLOv5 manually with --no-build-isolation to force using the downgraded setuptools
+RUN pip install --no-cache-dir --no-build-isolation git+https://github.com/ultralytics/yolov5.git@master
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Crear directorios para datos y logs

@@ -49,8 +49,14 @@ echo "192.168.1.100:/volume1/fotos /mnt/nas_data nfs defaults 0 0" | sudo tee -a
 ## 2. Instalación del Agente
 
 ### 2.1. Copiar Archivos
-Copia toda la carpeta del proyecto (`procesadorfotos`) desde tu Mac al servidor Ubuntu (usando `scp` o `rsync`).
+Puedes clonar el repositorio directamente (Recomendado) o copiar los archivos manualmente.
 
+#### Opción A: Git Clone (Recomendado)
+```bash
+git clone git@github.com:dcalisaya/WildIndex.git ~/wildindex
+```
+
+#### Opción B: Copia Manual (SCP)
 ```bash
 # Desde tu Mac
 scp -r ~/Developer/procesadorfotos usuario@192.168.1.x:~/wildindex

@@ -11,7 +11,8 @@ opencv-python-headless>=4.8.0
 # yolov5 (Provided by Ultralytics image)
 
 # Vector Database
-faiss-gpu
+# faiss-gpu (Causes build error on Py3.11, using CPU version for now)
+faiss-cpu
 
 # Metadata & Files
 PyExifTool>=0.5.0

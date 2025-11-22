@@ -7,7 +7,9 @@ pillow>=10.0.0
 numpy>=1.24.0
 
 # Computer Vision
+# Computer Vision
 opencv-python-headless>=4.8.0
+yolov5>=7.0.0
 
 # Vector Database
 faiss-gpu>=1.7.4

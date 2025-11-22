@@ -23,6 +23,9 @@ services:
       # Base de Datos Local (Persistencia rápida en SSD del Host)
       - ./data/db:/app/data/db
 
+      # Modelos (Persistencia de pesos descargados)
+      - ./models:/app/models
+
     deploy:
       resources:
         reservations:

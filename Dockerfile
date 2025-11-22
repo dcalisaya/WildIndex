@@ -1,13 +1,10 @@
-# Base image con PyTorch y CUDA 12.1 (Compatible con RTX 30xx/40xx/50xx)
-FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+# Base image de Ultralytics (Ya trae PyTorch + YOLO + CUDA configurado)
+FROM ultralytics/ultralytics:latest
 
 # Evitar interacciones durante la instalación
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Instalar dependencias del sistema
-# - exiftool: Para leer/escribir metadatos
-# - libgl1-mesa-glx: Necesario para OpenCV
-# - git: Para clonar repos si es necesario
+# Instalar dependencias del sistema adicionales (exiftool)
 RUN apt-get update && apt-get install -y \
     exiftool \
     libgl1-mesa-glx \
@@ -18,17 +15,18 @@ RUN apt-get update && apt-get install -y \
 # Configurar directorio de trabajo
 WORKDIR /app
 
-# Copiar dependencias de Python
+# Copiar dependencias de Python (solo las extra que no trae ultralytics)
 COPY requirements.txt .
 
-# Instalar dependencias de Python
+# Instalar dependencias extra (faiss, exiftool, etc.)
+# Nota: Ultralytics ya trae torch, torchvision, opencv, pandas, etc.
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Crear directorios para datos y logs
 RUN mkdir -p /app/data/input /app/data/processed /app/data/db /app/logs /app/config
 
-# Copiar el código fuente (aunque se sobreescribe con volumen en dev)
+# Copiar el código fuente
 COPY . .
 
-# Comando por defecto (se sobreescribe en docker-compose)
+# Comando por defecto
 CMD ["python", "src/orchestrator.py"]

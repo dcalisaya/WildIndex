@@ -75,7 +75,13 @@ class BatchProcessor:
             # 2. Preparar destino (Organizado por Fecha/Categoría)
             category = ai_result.get('md_category', 'unknown')
             dest_folder = self.output_dir / category
-            dest_folder.mkdir(parents=True, exist_ok=True)
+            try:
+                dest_folder.mkdir(parents=True, exist_ok=True)
+            except FileExistsError:
+                # Esto puede pasar si 'dest_folder' existe pero es un archivo, no un directorio
+                logger.warning(f"⚠️ {dest_folder} existe y no es un directorio. Intentando renombrar...")
+                dest_folder.rename(f"{dest_folder}_backup_{datetime.now().timestamp()}")
+                dest_folder.mkdir(parents=True, exist_ok=True)
             dest_path = dest_folder / file_path.name
             
             # 3. Copiar archivo

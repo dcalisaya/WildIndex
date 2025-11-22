@@ -95,9 +95,20 @@ class AIEngine:
         try:
             image = Image.open(image_path)
             
-            # Prompt dinámico
+            # Prompt usando chat template para LLaVA-NeXT
             prompt_text = "Describe the animal in the image in detail." if category == 'animal' else "Describe the person in the image in detail."
-            prompt = f"[INST] <image>\n{prompt_text} [/INST]"
+            
+            conversation = [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image"},
+                        {"type": "text", "text": prompt_text},
+                    ],
+                },
+            ]
+            
+            prompt = self.llava_processor.apply_chat_template(conversation, add_generation_prompt=True)
             
             inputs = self.llava_processor(prompt, image, return_tensors="pt").to(self.device)
             
@@ -111,8 +122,13 @@ class AIEngine:
             
             # Decodificar
             full_response = self.llava_processor.decode(output[0], skip_special_tokens=True)
-            # Limpiar el prompt de la respuesta (LLaVA a veces repite el prompt)
-            caption = full_response.split("[/INST]")[-1].strip()
+            
+            # Extraer solo la respuesta del asistente (después del prompt)
+            # El formato suele ser [INST] ... [/INST] respuesta
+            if "[/INST]" in full_response:
+                caption = full_response.split("[/INST]")[-1].strip()
+            else:
+                caption = full_response.strip()
             
             return caption
             

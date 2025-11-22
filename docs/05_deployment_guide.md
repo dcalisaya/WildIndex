@@ -35,21 +35,48 @@ sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 ```
 
-### 1.2. Montar el NAS (NFS)
-Asumimos que la IP del NAS es `192.168.1.100` y la carpeta compartida es `/volume1/fotos`.
+### 1.2. Montar el Almacenamiento (NAS)
+Dependiendo de tu NAS (Synology, TrueNAS, QNAP) y protocolo, la configuración varía.
 
+#### Opción A: NFS (Recomendado para Rendimiento) 🚀
+**Nota Importante:** NFS valida por **IP**, no por usuario/contraseña. Si el comando se queda "pensando" (hangs), suele ser porque el NAS está bloqueando la IP del servidor.
+
+1.  **Configuración en el NAS:**
+    *   **Synology:** Panel de Control > Carpetas Compartidas > Editar > Permisos NFS > Crear > IP del Servidor Ubuntu.
+    *   **TrueNAS Scale:** Shares > NFS > Add.
+        *   *Networks:* Añade la IP de tu servidor Ubuntu /32 (ej. `192.168.1.50/32`).
+        *   *Mapall User/Group:* Configura esto al dueño de los archivos (ej. `apps` o `admin`) para evitar problemas de "Permission Denied".
+
+2.  **Montaje en Ubuntu:**
+    ```bash
+    sudo apt install -y nfs-common
+    sudo mkdir -p /mnt/nas_data
+    
+    # Reemplaza la IP y la ruta (en TrueNAS suele ser /mnt/pool/dataset)
+    sudo mount -t nfs 192.168.1.100:/mnt/pool/fotos /mnt/nas_data
+    ```
+
+#### Opción B: SMB/CIFS (Usando Usuario y Contraseña) 🔑
+Si prefieres usar autenticación clásica o NFS te da problemas.
+
+1.  **Montaje en Ubuntu:**
+    ```bash
+    sudo apt install -y cifs-utils
+    sudo mkdir -p /mnt/nas_data
+    
+    # Reemplaza usuario, contraseña, IP y ruta
+    # uid/gid aseguran que puedas escribir en los archivos montados
+    sudo mount -t cifs -o username=TU_USUARIO,password=TU_CONTRASEÑA,uid=$(id -u),gid=$(id -g) //192.168.1.100/fotos /mnt/nas_data
+    ```
+
+#### Hacer persistente (Editar /etc/fstab)
+Para que se monte solo al reiniciar:
 ```bash
-# 1. Instalar cliente NFS
-sudo apt install -y nfs-common
+# Ejemplo NFS
+192.168.1.100:/mnt/pool/fotos /mnt/nas_data nfs defaults 0 0
 
-# 2. Crear punto de montaje
-sudo mkdir -p /mnt/nas_data
-
-# 3. Montar (Prueba temporal)
-sudo mount -t nfs 192.168.1.100:/volume1/fotos /mnt/nas_data
-
-# 4. Hacer persistente (Editar /etc/fstab)
-echo "192.168.1.100:/volume1/fotos /mnt/nas_data nfs defaults 0 0" | sudo tee -a /etc/fstab
+# Ejemplo SMB (Más seguro usar archivo de credenciales, pero esto sirve de ejemplo)
+//192.168.1.100/fotos /mnt/nas_data cifs username=user,password=pass,uid=1000,gid=1000 0 0
 ```
 
 ## 2. Instalación del Agente

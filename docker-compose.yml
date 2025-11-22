@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  wildindex:
+    build: .
+    container_name: wildindex
+    restart: unless-stopped
+    runtime: nvidia # Requiere NVIDIA Container Toolkit en el host
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - TZ=America/New_York # Ajustar zona horaria
+    volumes:
+      # Configuración y Código
+      - ./config:/app/config
+      - ./src:/app/src
+      - ./logs:/app/logs
+
+      # Datos (Mapeo al NAS montado en el Host)
+      # Asegúrate de que /mnt/nas_data esté montado en el Ubuntu Server
+      - /mnt/nas_data/input:/app/data/input:ro # Solo lectura para proteger originales
+      - /mnt/nas_data/processed:/app/data/processed # Escritura para resultados
+
+      # Base de Datos Local (Persistencia rápida en SSD del Host)
+      - ./data/db:/app/data/db
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+
+    command: [ "python", "-u", "src/orchestrator.py" ]

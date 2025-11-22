@@ -56,19 +56,54 @@ class AIEngine:
 
     def analyze_image(self, image_path: str) -> Dict[str, Any]:
         """
-
-    def _mock_inference(self, image_path: str) -> Dict[str, Any]:
-        """Simula el tiempo de procesamiento y resultados de la IA."""
-        import random
-        time.sleep(0.1) 
+        Pipeline principal:
+        1. MegaDetector -> Detectar si hay algo.
+        2. Si hay animal/persona -> LLaVA -> Describir qué hace.
+        """
+        # 1. Detección
+        md_result = self.megadetector.detect(image_path)
+        category = md_result['category']
         
-        categories = ['animal', 'empty', 'vehicle', 'person']
-        category = random.choices(categories, weights=[0.4, 0.4, 0.1, 0.1])[0]
-        
-        return {
+        result = {
             "md_category": category,
-            "md_confidence": round(random.uniform(0.7, 0.99), 2),
-            "md_bbox": [0.1, 0.1, 0.5, 0.5] if category == 'animal' else [],
-            "llava_caption": f"[MOCK] Un {category} en {image_path}",
-            "species_prediction": "Panthera onca [MOCK]" if category == 'animal' else None
+            "md_confidence": md_result['confidence'],
+            "md_bbox": md_result['bbox'],
+            "llava_caption": None,
+            "species_prediction": None # TODO: Fase 3 (Clasificador específico)
         }
+
+        # 2. Descripción (Solo si vale la pena)
+        if category in ['animal', 'person'] and self.llava_model:
+            result['llava_caption'] = self._generate_caption(image_path, category)
+
+        return result
+
+    def _generate_caption(self, image_path: str, category: str) -> str:
+        """Genera una descripción usando LLaVA."""
+        try:
+            image = Image.open(image_path)
+            
+            # Prompt dinámico
+            prompt_text = "Describe the animal in the image in detail." if category == 'animal' else "Describe the person in the image in detail."
+            prompt = f"[INST] <image>\n{prompt_text} [/INST]"
+            
+            inputs = self.llava_processor(prompt, image, return_tensors="pt").to(self.device)
+            
+            # Generar
+            output = self.llava_model.generate(
+                **inputs, 
+                max_new_tokens=100,
+                do_sample=True,
+                temperature=0.2
+            )
+            
+            # Decodificar
+            full_response = self.llava_processor.decode(output[0], skip_special_tokens=True)
+            # Limpiar el prompt de la respuesta (LLaVA a veces repite el prompt)
+            caption = full_response.split("[/INST]")[-1].strip()
+            
+            return caption
+            
+        except Exception as e:
+            logger.error(f"❌ Error generando caption LLaVA: {e}")
+            return None

@@ -1,7 +1,17 @@
 # 🚀 Guía de Despliegue: Ubuntu Server + NVIDIA GPU
 
 **Fecha:** 21 Noviembre 2025
-**Hardware Requerido:** Servidor Ubuntu 22.04/24.04 con GPU NVIDIA (RTX 30xx/40xx/50xx).
+**Hardware Requerido:**
+
+### 🖥️ Requisitos de Hardware (Servidor)
+Para un rendimiento óptimo y evitar cuellos de botella durante la construcción (build) y la inferencia:
+
+*   **CPU:** 4+ Cores (Intel Core i5/i7 o AMD Ryzen 5/7 recientes).
+*   **RAM:** 16 GB mínimo (32 GB recomendado si planeas usar LLaVA).
+*   **Disco:** SSD con al menos **50 GB libres**.
+    *   *Nota:* Las imágenes de Docker (PyTorch + CUDA) y los modelos ocupan bastante espacio. Evita usar HDDs mecánicos para el sistema operativo/Docker.
+*   **GPU:** NVIDIA RTX 3060 (12GB) o superior.
+    *   *Recomendado:* RTX 4070/5070 Ti (16GB VRAM) para correr múltiples modelos.
 
 ## 1. Preparación del Host (Ubuntu)
 

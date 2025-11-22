@@ -1,5 +1,6 @@
 import os
 import shutil
+import json
 import logging
 from pathlib import Path
 from typing import List
@@ -96,7 +97,7 @@ class BatchProcessor:
                 "capture_timestamp": datetime.now().isoformat(),
                 "md_category": category,
                 "md_confidence": ai_result.get('md_confidence'),
-                "md_bbox": ai_result.get('md_bbox'),
+                "md_bbox": json.dumps(ai_result.get('md_bbox')) if ai_result.get('md_bbox') else None,
                 "llava_caption": ai_result.get('llava_caption'),
                 "species_prediction": ai_result.get('species_prediction'),
                 "status": "PROCESSED"

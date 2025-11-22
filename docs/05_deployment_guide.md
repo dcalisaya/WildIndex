@@ -9,7 +9,13 @@
 Ejecuta estos comandos en tu servidor:
 
 ```bash
-# 1. Instalar Drivers NVIDIA (si no los tienes)
+# 1. Verificar si ya tienes drivers (Opcional)
+# Ejecuta esto primero:
+nvidia-smi
+# ✅ Si ves una tabla con tu GPU, SALTA al paso 2 (Instalar Docker).
+# ❌ Si dice "command not found", continúa con la instalación:
+
+# 1.1 Instalar Drivers NVIDIA
 sudo apt update
 sudo apt install -y nvidia-driver-535 nvidia-utils-535
 

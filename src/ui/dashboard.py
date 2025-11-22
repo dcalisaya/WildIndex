@@ -102,7 +102,7 @@ else:
             try:
                 if os.path.exists(image_path):
                     img = Image.open(image_path)
-                    st.image(img, use_column_width=True)
+                    st.image(img, use_container_width=True)
                     
                     # Metadata
                     st.caption(f"**{row['file_name']}**")

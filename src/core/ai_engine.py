@@ -1,8 +1,11 @@
 import logging
-import time
+import torch
 import os
 from typing import Dict, Any
+from PIL import Image
 from src.core.detectors.megadetector import MegaDetector
+# LLaVA imports
+from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration, BitsAndBytesConfig
 
 logger = logging.getLogger("WildIndex.AI")
 
@@ -12,38 +15,47 @@ class AIEngine:
     """
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.mock_mode = config.get('mock_mode', False)
-        self.md_model_path = config.get('md_model_path', 'models/md_v5a.0.0.pt')
-        self.detector = None
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
         
-        if not self.mock_mode and os.path.exists(self.md_model_path):
-            self.detector = MegaDetector(self.md_model_path)
+        # 1. Cargar MegaDetector (Detección)
+        self.md_model_path = config.get("megadetector_model_path", "models/md_v5a.0.0.pt")
+        self.md_threshold = config.get("megadetector_threshold", 0.2)
+        self.megadetector = MegaDetector(self.md_model_path, self.md_threshold, self.device)
+        
+        # 2. Cargar LLaVA (Descripción) - Solo si hay GPU
+        self.llava_model_id = "llava-hf/llava-v1.6-mistral-7b-hf"
+        self.llava_processor = None
+        self.llava_model = None
+        
+        if self.device == "cuda":
+            self._load_llava()
         else:
-            if not self.mock_mode:
-                logger.warning(f"⚠️ Modelo MegaDetector no encontrado en {self.md_model_path}. Usando MOCK.")
-            self.mock_mode = True
+            logger.warning("⚠️ GPU no detectada. LLaVA (descripciones) estará desactivado.")
+
+    def _load_llava(self):
+        """Carga LLaVA-NeXT con cuantización de 4 bits para ahorrar VRAM."""
+        try:
+            logger.info(f"🧠 Cargando LLaVA ({self.llava_model_id}) en 4-bit...")
+            
+            quantization_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_compute_dtype=torch.float16,
+            )
+
+            self.llava_processor = LlavaNextProcessor.from_pretrained(self.llava_model_id)
+            self.llava_model = LlavaNextForConditionalGeneration.from_pretrained(
+                self.llava_model_id,
+                quantization_config=quantization_config,
+                device_map="auto"
+            )
+            logger.info("✅ LLaVA cargado correctamente.")
+        except Exception as e:
+            logger.error(f"❌ Error cargando LLaVA: {e}")
+            logger.warning("⚠️ Continuando sin capacidades de descripción detallada.")
 
     def analyze_image(self, image_path: str) -> Dict[str, Any]:
         """
-        Ejecuta el pipeline de IA sobre una imagen.
-        """
-        if self.mock_mode:
-            return self._mock_inference(image_path)
-        
-        # 1. Detección (MegaDetector)
-        md_result = self.detector.detect(image_path)
-        
-        # 2. Captioning (LLaVA) - TODO: Implementar
-        # Por ahora devolvemos placeholder si es animal
-        llava_caption = None
-        if md_result.get('md_category') == 'animal':
-            llava_caption = "Descripción pendiente de LLaVA (Fase 2.2)"
-
-        return {
-            **md_result,
-            "llava_caption": llava_caption,
-            "species_prediction": None # Requiere clasificador específico
-        }
 
     def _mock_inference(self, image_path: str) -> Dict[str, Any]:
         """Simula el tiempo de procesamiento y resultados de la IA."""

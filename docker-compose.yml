@@ -9,6 +9,7 @@ services:
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
       - TZ=America/New_York # Ajustar zona horaria
       - PYTHONPATH=/app # Fix para imports absolutos (src.database...)
+      - HF_HOME=/app/models/huggingface # Persistir modelos de Hugging Face
     volumes:
       # Configuración y Código
       - ./config:/app/config

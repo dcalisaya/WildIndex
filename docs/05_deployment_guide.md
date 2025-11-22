@@ -79,6 +79,26 @@ Para que se monte solo al reiniciar:
 //192.168.1.100/fotos /mnt/nas_data cifs username=user,password=pass,uid=1000,gid=1000 0 0
 ```
 
+### 1.3. Verificar Permisos (CRÍTICO) ⚠️
+Antes de seguir, **es obligatorio** verificar que puedes leer y escribir en el NAS desde Ubuntu.
+
+```bash
+# 1. Prueba de Lectura (Listar archivos)
+ls -l /mnt/nas_data
+# ✅ Deberías ver tus carpetas de fotos.
+
+# 2. Prueba de Escritura (Crear un archivo vacío)
+touch /mnt/nas_data/test_write.txt
+
+# ✅ Si NO da error, bórralo y continúa:
+rm /mnt/nas_data/test_write.txt
+
+# ❌ Si dice "Permission denied":
+# - Revisa el "Mapall User" en TrueNAS (NFS).
+# - Revisa que el usuario SMB tenga permisos de escritura.
+# - Revisa el uid/gid en el comando mount.
+```
+
 ## 2. Instalación del Agente
 
 ### 2.1. Copiar Archivos

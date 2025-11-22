@@ -104,7 +104,14 @@ rm /mnt/nas_data/test_write.txt
 ### 2.1. Copiar Archivos
 Puedes clonar el repositorio directamente (Recomendado) o copiar los archivos manualmente.
 
-#### Opción A: Git Clone (Recomendado)
+#### Opción A: Git Clone (HTTPS) - ✅ Más Fácil
+No requiere configurar claves SSH. Ideal para despliegues rápidos.
+```bash
+git clone https://github.com/dcalisaya/WildIndex.git ~/wildindex
+```
+
+#### Opción B: Git Clone (SSH)
+Solo si ya tienes tus claves SSH configuradas en GitHub.
 ```bash
 git clone git@github.com:dcalisaya/WildIndex.git ~/wildindex
 ```

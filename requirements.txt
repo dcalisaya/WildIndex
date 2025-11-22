@@ -1,6 +1,6 @@
-# Core AI (Compatible versions for CUDA 12.1)
-torch==2.1.0
-torchvision==0.16.0
+# Core AI (Provided by Ultralytics image)
+# torch
+# torchvision
 transformers>=4.35.0
 accelerate>=0.24.0
 pillow>=10.0.0
@@ -8,7 +8,7 @@ numpy>=1.24.0
 
 # Computer Vision
 opencv-python-headless>=4.8.0
-yolov5==7.0.13
+# yolov5 (Provided by Ultralytics image)
 
 # Vector Database
 faiss-gpu

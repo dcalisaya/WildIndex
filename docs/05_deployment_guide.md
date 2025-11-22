@@ -22,6 +22,8 @@ sudo apt install -y nvidia-driver-535 nvidia-utils-535
 # 2. Instalar Docker Engine
 curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER
+# ⚠️ IMPORTANTE: Para que esto surta efecto sin reiniciar, ejecuta:
+newgrp docker
 
 # 3. Instalar NVIDIA Container Toolkit (CRÍTICO para Docker + GPU)
 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \

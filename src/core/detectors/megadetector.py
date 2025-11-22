@@ -17,7 +17,6 @@ class MegaDetector:
         """Carga el modelo YOLOv5 (MegaDetector)."""
         try:
             logger.info(f"🔌 Cargando MegaDetector desde {self.model_path} en {self.device}...")
-            import yolov5
             import torch
             
             # PATCH: PyTorch 2.4+ fuerza weights_only=True por defecto, lo que rompe modelos viejos de YOLOv5.
@@ -30,7 +29,9 @@ class MegaDetector:
             
             torch.load = _safe_load
             try:
-                self.model = yolov5.load(self.model_path, device=self.device)
+                # Usamos torch.hub.load apuntando al clon local de YOLOv5
+                # source='local' usa el repo en /app/yolov5 (definido en PYTHONPATH o path explícito)
+                self.model = torch.hub.load('/app/yolov5', 'custom', path=self.model_path, source='local', device=self.device)
             finally:
                 torch.load = _original_load # Restaurar original
                 
@@ -54,8 +55,7 @@ class MegaDetector:
                     
                     torch.load = _safe_load
                     try:
-                        import yolov5
-                        self.model = yolov5.load(self.model_path, device='cpu')
+                        self.model = torch.hub.load('/app/yolov5', 'custom', path=self.model_path, source='local', device='cpu')
                     finally:
                         torch.load = _original_load
 

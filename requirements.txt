@@ -12,7 +12,7 @@ opencv-python-headless>=4.8.0
 yolov5>=7.0.0
 
 # Vector Database
-faiss-gpu>=1.7.4
+faiss-gpu
 
 # Metadata & Files
 PyExifTool>=0.5.0

@@ -8,6 +8,7 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
       - TZ=America/New_York # Ajustar zona horaria
+      - PYTHONPATH=/app # Fix para imports absolutos (src.database...)
     volumes:
       # Configuración y Código
       - ./config:/app/config

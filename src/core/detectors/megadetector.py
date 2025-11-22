@@ -18,7 +18,22 @@ class MegaDetector:
         try:
             logger.info(f"🔌 Cargando MegaDetector desde {self.model_path} en {self.device}...")
             import yolov5
-            self.model = yolov5.load(self.model_path, device=self.device)
+            import torch
+            
+            # PATCH: PyTorch 2.4+ fuerza weights_only=True por defecto, lo que rompe modelos viejos de YOLOv5.
+            # Forzamos weights_only=False temporalmente porque confiamos en el modelo MD.
+            _original_load = torch.load
+            def _safe_load(*args, **kwargs):
+                if 'weights_only' not in kwargs:
+                    kwargs['weights_only'] = False
+                return _original_load(*args, **kwargs)
+            
+            torch.load = _safe_load
+            try:
+                self.model = yolov5.load(self.model_path, device=self.device)
+            finally:
+                torch.load = _original_load # Restaurar original
+                
             self.model.conf = self.conf_thres
             logger.info(f"✅ MegaDetector cargado correctamente en {self.device}.")
             
@@ -29,8 +44,21 @@ class MegaDetector:
                 logger.warning("🔄 Reintentando con CPU...")
                 try:
                     self.device = 'cpu'
-                    import yolov5
-                    self.model = yolov5.load(self.model_path, device='cpu')
+                    # Repetir el patch para el intento en CPU
+                    import torch
+                    _original_load = torch.load
+                    def _safe_load(*args, **kwargs):
+                        if 'weights_only' not in kwargs:
+                            kwargs['weights_only'] = False
+                        return _original_load(*args, **kwargs)
+                    
+                    torch.load = _safe_load
+                    try:
+                        import yolov5
+                        self.model = yolov5.load(self.model_path, device='cpu')
+                    finally:
+                        torch.load = _original_load
+
                     self.model.conf = self.conf_thres
                     logger.info("✅ MegaDetector cargado en CPU (fallback).")
                 except Exception as cpu_error:

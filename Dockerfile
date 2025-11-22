@@ -21,8 +21,9 @@ WORKDIR /app
 # Copiar dependencias de Python
 COPY requirements.txt .
 
-# Instalar dependencias de Python
-RUN pip install --no-cache-dir -r requirements.txt
+# Limpiar dependencias preinstaladas conflictivas y forzar reinstalación
+RUN pip uninstall -y torch torchvision torchaudio && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Crear directorios para datos y logs
 RUN mkdir -p /app/data/input /app/data/processed /app/data/db /app/logs /app/config

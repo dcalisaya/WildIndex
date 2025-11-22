@@ -36,3 +36,18 @@ services:
               capabilities: [ gpu ]
 
     command: [ "python", "-u", "src/orchestrator.py" ]
+
+  dashboard:
+    build: .
+    container_name: wildindex_dashboard
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - TZ=America/New_York
+      - PYTHONPATH=/app
+    volumes:
+      - ./src:/app/src
+      - ./data/db:/app/data/db:ro # Read-only access to DB
+      - /mnt/nas_data/processed:/app/data/processed:ro # Read-only access to images
+    command: [ "streamlit", "run", "src/ui/dashboard.py", "--server.address=0.0.0.0" ]

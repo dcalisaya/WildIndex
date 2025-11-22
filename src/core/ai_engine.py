@@ -62,7 +62,19 @@ class AIEngine:
         """
         # 1. Detección
         md_result = self.megadetector.detect(image_path)
-        category = md_result['category']
+        
+        # Fix: MegaDetector devuelve 'md_category', no 'category'
+        if 'error' in md_result:
+            logger.error(f"Error en detección: {md_result['error']}")
+            return {
+                "md_category": "error",
+                "md_confidence": 0.0,
+                "md_bbox": [],
+                "llava_caption": None,
+                "species_prediction": None
+            }
+
+        category = md_result['md_category']
         
         result = {
             "md_category": category,

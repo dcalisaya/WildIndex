@@ -137,6 +137,10 @@ cp .env.example .env
 ```bash
 docker compose up -d --build
 ```
+**⏳ Tiempo estimado:** 5-15 minutos (dependiendo de tu internet).
+*   Descarga la imagen base de PyTorch (~3.5 GB).
+*   Instala dependencias de Python.
+*   *Nota:* Si parece que se detuvo en "Pulling fs layer", ten paciencia.
 
 ### 2.4. Descargar Modelos de IA (Primer Uso) 🧠
 Una vez que el contenedor esté corriendo, necesitas descargar los "cerebros" (pesos del modelo MegaDetector). Esto solo se hace una vez.
@@ -144,6 +148,7 @@ Una vez que el contenedor esté corriendo, necesitas descargar los "cerebros" (p
 ```bash
 docker compose exec wildindex python scripts/setup_models.py
 ```
+**⏳ Tiempo estimado:** 2-5 minutos.
 *   Esto descargará `md_v5a.0.0.pt` (~250MB) en la carpeta `models/`.
 *   Si no lo haces, el agente funcionará en modo "Mock" (simulación).
 

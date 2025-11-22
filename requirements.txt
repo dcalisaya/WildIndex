@@ -27,3 +27,5 @@ pandas>=2.1.0
 
 # YOLOv5 dependencies
 huggingface_hub>=0.23.0
+seaborn>=0.11.0
+thop>=0.1.1

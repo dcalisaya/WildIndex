@@ -4,7 +4,7 @@
 # VERSIÓN:  1.0.0
 # FECHA:    Noviembre 2025
 # DESCRIPCIÓN:
-# Agente autónomo para el procesamiento local (on-premise) de un banco de 500GB+
+# Agente autónomo para el procesamiento local (on-premise) de grandes volúmenes de imágenes
 # de imágenes de conservación. Utiliza modelos multimodales (MegaDetector, LLaVA,
 # CLIP) y la GPU NVIDIA RTX 5070 Ti (16GB) para la generación de metadatos ricos
 # e indexación en el NAS Synology. Prioriza la privacidad total.
@@ -13,10 +13,10 @@
 
 ## 1. 🎯 Misión y Alcance (Mission and Scope)
 
-*   **Misión del Agente:** Procesar de forma privada y local un banco de imágenes de conservación ambiental (500GB+), generar metadatos ricos (descripción, detección, embeddings), e indexar los resultados para la búsqueda avanzada y almacenamiento en el NAS (Synology).
-*   **Volumen Objetivo:** $> 500$ GB de imágenes (Tanto JPEGs como RAW de alta resolución).
+*   **Misión del Agente:** Procesar de forma privada y local grandes volúmenes de imágenes de conservación ambiental, generar metadatos ricos (descripción, detección, embeddings), e indexar los resultados para la búsqueda avanzada y almacenamiento en NAS.
+*   **Volumen Objetivo:** Escala de Terabytes (Tanto JPEGs como RAW de alta resolución).
 *   **Hardware de Ejecución:** GPU NVIDIA RTX 5070 Ti (16GB VRAM), $64$ GB RAM, Linux/Windows.
-*   **Salida Final (Output):** Banco de imágenes indexado y queryable (capaz de ser consultado) en el NAS.
+*   **Salida Final (Output):** Banco de imágenes indexado y queryable (capaz de ser consultado) en el almacenamiento de red.
 
 ## 2. 🧱 Arquitectura del Pipeline (Pipeline Architecture)
 
@@ -64,7 +64,7 @@ Detalla el stack técnico necesario para la implementación local.
 ## 5. ⚙️ Despliegue y Mantenimiento
 
 *   **Despliegue Inicial:** Configuración del entorno de Python, instalación de dependencias de CUDA y PyTorch, y descarga de pesos de los modelos (model weights).
-*   **Ejecución:** El agente se ejecuta en modo Batch (procesando todos los 500GB de una vez) y luego en modo Watchdog (monitoreando nuevas imágenes añadidas al NAS).
+*   **Ejecución:** El agente se ejecuta en modo Batch (procesando todo el dataset) y luego en modo Watchdog (monitoreando nuevas imágenes añadidas).
 *   **Mantenimiento:** El pipeline requiere revisiones periódicas de los modelos (e.g., actualizar a una versión más reciente de LLaVA o MegaDetector).
 
 

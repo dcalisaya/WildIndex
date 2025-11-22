@@ -9,7 +9,7 @@
 *   **Montaje de Red:**
     *   Protocolo: **NFSv4** (Preferido sobre SMB por menor latencia en Linux/Docker).
     *   Punto de Montaje: `/mnt/nas_data` en el host, mapeado a `/app/data` en el contenedor.
-    *   Permisos: Usuario `1000:1000` (o el ID del usuario Synology) para evitar problemas de escritura.
+    *   Permisos: Usuario `1000:1000` (o el ID del usuario del NAS) para evitar problemas de escritura.
 *   **Ubicación de Base de Datos:**
     *   **SQLite (.db):** Almacenado en el **SSD local** del host (NVMe) para máxima velocidad de escritura (WAL mode). Backup diario al NAS.
     *   **FAISS Index:** Generado en RAM/NVMe local, guardado periódicamente en NAS.
@@ -67,7 +67,7 @@ Tabla `processed_images`:
 
 ### 2.3. Estrategia de Validación (QA)
 *   **Muestreo Aleatorio:** Script que copia el 1% de las imágenes procesadas a una carpeta `QA_Review`.
-*   **Validación Humana:** El cliente revisa ese 1% y marca "Correcto/Incorrecto" en un CSV simple.
+*   **Validación Humana:** Un revisor humano verifica ese 1% y marca "Correcto/Incorrecto" en un CSV simple.
 *   **Métrica de Éxito:** Si el error es < 5%, se aprueba el lote completo.
 
 ## 3. 🌐 FASE III: PRODUCTO OPEN SOURCE Y ESCALABILIDAD (Semanas 7+)
@@ -77,7 +77,7 @@ Tabla `processed_images`:
 *   `/drivers`: Adaptadores para modelos específicos (MDv5, LLaVA).
     *   `CONTRIBUTING.md`: "Cómo añadir tu propio modelo de fauna local". Guía para crear una clase que herede de `BaseDetector`.
 *   `/deploy`: Scripts de Ansible/Docker.
-*   `/examples`: Configs de ejemplo para diferentes NAS (Synology, QNAP).
+*   `/examples`: Configs de ejemplo para diferentes NAS (Synology, QNAP, TrueNAS).
 
 ### 3.2. Prototipo de Interfaz de Búsqueda (Web App)
 Componentes clave (Streamlit):

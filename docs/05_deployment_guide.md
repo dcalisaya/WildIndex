@@ -30,7 +30,7 @@ sudo systemctl restart docker
 ```
 
 ### 1.2. Montar el NAS (NFS)
-Asumimos que la IP del Synology es `192.168.1.100` y la carpeta compartida es `/volume1/fotos`.
+Asumimos que la IP del NAS es `192.168.1.100` y la carpeta compartida es `/volume1/fotos`.
 
 ```bash
 # 1. Instalar cliente NFS

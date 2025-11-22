@@ -27,7 +27,7 @@ La arquitectura debe evolucionar de un "Pipeline Monolítico" a un "Pipeline por
 
 ## 3. Estrategia de Procesamiento (Pipeline Design)
 
-Para procesar 500GB+ de imágenes de manera eficiente, recomiendo un enfoque de **Pasadas Secuenciales (Multi-Pass Approach)** en lugar de procesar imagen por imagen con todos los modelos.
+Para procesar grandes volúmenes de imágenes de manera eficiente, recomiendo un enfoque de **Pasadas Secuenciales (Multi-Pass Approach)** en lugar de procesar imagen por imagen con todos los modelos.
 
 ### Pasada 1: Filtrado Rápido (The "Cull")
 *   **Modelos:** Solo MegaDetector v5.
@@ -56,7 +56,7 @@ Para procesar 500GB+ de imágenes de manera eficiente, recomiendo un enfoque de 
     *   *Mitigación:* Usar el score de confianza de MegaDetector como filtro primario. Si MD dice "Empty" con 99%, no preguntar a LLaVA.
 2.  **Corrupción de Datos:** Fallo de energía durante la escritura en DB.
     *   *Mitigación:* Transacciones ACID en SQLite. Backups automáticos del archivo `.db` y del índice FAISS.
-3.  **Tiempo de Proceso:** 500GB pueden tardar días.
+3.  **Tiempo de Proceso:** Datasets grandes pueden tardar días.
     *   *Mitigación:* Checkpoints. El script debe poder reanudarse donde se quedó sin reprocesar nada.
 
 ## 6. Veredicto Final

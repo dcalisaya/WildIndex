@@ -20,6 +20,8 @@ COPY requirements.txt .
 
 # Instalar dependencias extra (faiss, exiftool, etc.)
 # Nota: Ultralytics ya trae torch, torchvision, opencv, pandas, etc.
+# Downgrade setuptools to avoid "Multiple top-level packages" error with YOLOv5 git install
+RUN pip install --no-cache-dir "setuptools<70.0.0" wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Crear directorios para datos y logs

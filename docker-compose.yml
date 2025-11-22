@@ -8,7 +8,7 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
       - TZ=America/New_York # Ajustar zona horaria
-      - PYTHONPATH=/app # Fix para imports absolutos (src.database...)
+      - PYTHONPATH=/app:/app/yolov5 # Fix para imports absolutos y YOLOv5 manual
       - HF_HOME=/app/models/huggingface # Persistir modelos de Hugging Face
     volumes:
       # Configuración y Código

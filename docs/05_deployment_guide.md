@@ -138,7 +138,16 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-### 2.4. Verificar Logs
+### 2.4. Descargar Modelos de IA (Primer Uso) 🧠
+Una vez que el contenedor esté corriendo, necesitas descargar los "cerebros" (pesos del modelo MegaDetector). Esto solo se hace una vez.
+
+```bash
+docker compose exec wildindex python scripts/setup_models.py
+```
+*   Esto descargará `md_v5a.0.0.pt` (~250MB) en la carpeta `models/`.
+*   Si no lo haces, el agente funcionará en modo "Mock" (simulación).
+
+### 2.5. Verificar Logs
 ```bash
 docker compose logs -f
 ```

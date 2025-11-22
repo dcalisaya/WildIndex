@@ -15,6 +15,21 @@ Toda la documentación estratégica y técnica ha sido organizada en la carpeta 
 4.  **[Análisis de Arquitectura](docs/03_architecture.md):** Viabilidad técnica, hardware (RTX 5070 Ti) y selección de modelos (MegaDetector, LLaVA, CLIP).
 5.  **[Plan de Implementación](docs/04_implementation_plan.md):** Guía paso a paso en 3 fases (Setup, Ejecución, Producto).
 
+## ✨ Características
+
+*   **🧠 Visual Intelligence (New):**
+    *   **MegaDetector v5:** State-of-the-art detection for animals, people, and vehicles.
+    *   **LLaVA-NeXT Integration:** Generates detailed natural language descriptions (e.g., "A jaguar walking at night") using 4-bit quantized LLMs.
+*   **📸 RAW Support:**
+    *   Native support for `.ARW`, `.CR2`, and other RAW formats.
+    *   **Non-destructive:** Generates standard `.xmp` sidecar files compatible with Lightroom, Capture One, and Bridge.
+*   **⚡ High Performance:**
+    *   **GPU Acceleration:** Optimized for NVIDIA GPUs (CUDA 12.1).
+    *   **Smart Batching:** Processes thousands of images efficiently.
+    *   **CPU Fallback:** Automatically switches to CPU if GPU is unavailable.
+*   **📊 Metadata Injection:** Writes XMP/IPTC tags directly to files (o sidecars) for seamless workflow integration.
+*   **🔍 Vector Search (Coming Soon):** Semantic search capabilities using CLIP and FAISS.
+
 ## 🚀 Inicio Rápido (Próximamente)
 
 El proyecto se encuentra actualmente en la **Fase 1: Setup e Infraestructura**.
@@ -34,9 +49,9 @@ El proyecto se encuentra actualmente en la **Fase 1: Setup e Infraestructura**.
 └── README.md           # Este archivo
 ```
 
-## 🤝 Contribución
+## 🤝 Contributing
 
-Este proyecto sigue una filosofía **Open Core**. El motor de procesamiento es de código abierto bajo la licencia Apache 2.0.
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to help improve WildIndex.es
 
 ---
 *Desarrollado con ❤️ para la conservación de la biodiversidad.*

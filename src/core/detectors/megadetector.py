@@ -17,24 +17,28 @@ class MegaDetector:
         """Carga el modelo YOLOv5 (MegaDetector)."""
         try:
             logger.info(f"🔌 Cargando MegaDetector desde {self.model_path} en {self.device}...")
-            # Usamos torch.hub para cargar custom model. 
-            # 'source="local"' asume que yolov5 está instalado o clonado, pero 'ultralytics/yolov5' es más estándar.
-            # Para evitar descargas en runtime, lo ideal es usar yolov5 package.
-            
-            # Opción A: Usando yolov5 pip package (si funciona bien con MD)
             import yolov5
             self.model = yolov5.load(self.model_path, device=self.device)
-            
-            # Opción B: torch.hub.load('ultralytics/yolov5', 'custom', path=self.model_path)
-            # self.model = torch.hub.load('ultralytics/yolov5', 'custom', path=self.model_path, device=self.device)
-            
             self.model.conf = self.conf_thres
-            logger.info("✅ MegaDetector cargado correctamente.")
+            logger.info(f"✅ MegaDetector cargado correctamente en {self.device}.")
             
         except Exception as e:
-            logger.error(f"❌ Error cargando MegaDetector: {e}")
-            # Fallback o re-raise
-            raise e
+            # Si falla CUDA, intentar con CPU
+            if self.device == 'cuda':
+                logger.warning(f"⚠️ Error cargando en CUDA: {e}")
+                logger.warning("🔄 Reintentando con CPU...")
+                try:
+                    self.device = 'cpu'
+                    import yolov5
+                    self.model = yolov5.load(self.model_path, device='cpu')
+                    self.model.conf = self.conf_thres
+                    logger.info("✅ MegaDetector cargado en CPU (fallback).")
+                except Exception as cpu_error:
+                    logger.error(f"❌ Error cargando MegaDetector incluso en CPU: {cpu_error}")
+                    raise cpu_error
+            else:
+                logger.error(f"❌ Error cargando MegaDetector: {e}")
+                raise e
 
     def detect(self, image_path: str) -> Dict[str, Any]:
         """

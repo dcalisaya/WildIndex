@@ -78,8 +78,8 @@ class AIEngine:
         
         result = {
             "md_category": category,
-            "md_confidence": md_result['confidence'],
-            "md_bbox": md_result['bbox'],
+            "md_confidence": md_result['md_confidence'],
+            "md_bbox": md_result['md_bbox'],
             "llava_caption": None,
             "species_prediction": None # TODO: Fase 3 (Clasificador específico)
         }

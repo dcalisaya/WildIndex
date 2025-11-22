@@ -83,9 +83,15 @@ class BatchProcessor:
                 shutil.copy2(file_path, dest_path)
             
             # 4. Inyectar Metadatos (Sobre la copia)
-            # Solo inyectamos en JPEGs por seguridad. RAWs necesitarían sidecar (TODO)
-            if dest_path.suffix.lower() in ['.jpg', '.jpeg']:
-                self.metadata.write_metadata(str(dest_path), ai_result)
+            # Detectar si es RAW para usar sidecar
+            is_raw = dest_path.suffix.lower() in ['.arw', '.cr2', '.dng', '.nef', '.orf', '.rw2']
+            
+            if is_raw:
+                # RAW -> Generar .xmp sidecar
+                self.metadata.write_metadata(str(dest_path), ai_result, sidecar=True)
+            elif dest_path.suffix.lower() in ['.jpg', '.jpeg', '.png', '.tiff']:
+                # Imagen normal -> Inyectar dentro del archivo
+                self.metadata.write_metadata(str(dest_path), ai_result, sidecar=False)
             
             # 5. Guardar en DB
             record = {

@@ -10,13 +10,18 @@ class MetadataInjector:
     def __init__(self, exiftool_path: str = "exiftool"):
         self.exiftool_path = exiftool_path
 
-    def write_metadata(self, file_path: str, metadata: Dict[str, Any]) -> bool:
+    def write_metadata(self, file_path: str, metadata: Dict[str, Any], sidecar: bool = False) -> bool:
         """
-        Escribe metadatos XMP/IPTC en el archivo de imagen.
+        Escribe metadatos XMP/IPTC en el archivo de imagen o en un sidecar .xmp.
         Soporta: Keywords (Categoría, Especie), Description (Caption).
         """
         path = Path(file_path)
-        if not path.exists():
+        target_path = path
+        
+        if sidecar:
+            target_path = path.with_suffix('.xmp')
+            logger.info(f"📝 Generando sidecar XMP: {target_path.name}")
+        elif not path.exists():
             logger.error(f"❌ Archivo no encontrado: {file_path}")
             return False
 
@@ -57,7 +62,7 @@ class MetadataInjector:
             "-overwrite_original",
             "-P",
             *tags_to_write,
-            str(path)
+            str(target_path)
         ]
 
         # 3. Ejecutar

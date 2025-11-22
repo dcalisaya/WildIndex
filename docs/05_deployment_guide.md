@@ -168,7 +168,45 @@ docker compose logs -f
 ```
 Deberías ver: `✅ GPU Detectada: NVIDIA GeForce RTX 5070 Ti`.
 
-## 3. Solución de Problemas Comunes
+## 3. Solución de Problemas Comunes (FAQ) 🛠️
 
-*   **Error: "could not select device driver"** -> Reinstala `nvidia-container-toolkit` y reinicia docker.
-*   **Error: "Permission denied" en /app/data** -> Verifica que el usuario del NAS tenga permisos de lectura/escritura para la IP del servidor, o usa `chmod 777` en la carpeta del NAS (solución rápida, no segura).
+### 3.1. Conflictos de Dependencias (PyTorch / YOLOv5)
+**Síntoma:** Errores como `ModuleNotFoundError: No module named 'huggingface_hub'`, `torchvision is incompatible with torch`, o `AttributeError: 'Upsample' object has no attribute 'recompute_scale_factor'`.
+**Causa:** Mezcla de versiones de PyTorch instaladas por `pip` sobre una imagen base antigua.
+**Solución:**
+1.  Asegúrate de usar la imagen base de **Ultralytics** en el `Dockerfile`: `FROM ultralytics/ultralytics:latest`.
+2.  Ejecuta un rebuild limpio:
+    ```bash
+    docker compose down --rmi all
+    docker compose build --no-cache
+    docker compose up -d
+    ```
+
+### 3.2. Error de Base de Datos: `sqlite3.InterfaceError`
+**Síntoma:** `Error binding parameter 8 - probably unsupported type`.
+**Causa:** Intentar guardar una lista (ej. `[0.1, 0.2, 0.5, 0.8]`) directamente en una columna `TEXT` de SQLite.
+**Solución:** El código ya incluye la corrección (`json.dumps()`), pero si persiste, asegúrate de tener la última versión del código (`git pull origin master`).
+
+### 3.3. El Modelo MegaDetector no carga (Loop de reinicios)
+**Síntoma:** El contenedor se reinicia constantemente o log muestra `FileNotFoundError: models/md_v5a.0.0.pt`.
+**Causa:** No se ha descargado el modelo o el volumen `./models` no está montado correctamente.
+**Solución:**
+1.  Verifica que la carpeta `models/` exista en el host.
+2.  Ejecuta el script de descarga manual:
+    ```bash
+    docker compose exec wildindex python scripts/setup_models.py
+    ```
+
+### 3.4. Conflicto con ComfyUI / Otros procesos de IA
+**Síntoma:** `CUDA out of memory` al correr WildIndex mientras generas imágenes/video en ComfyUI.
+**Solución:**
+*   **Automática:** WildIndex tiene un sistema de **Fallback a CPU**. Si la GPU está llena, usará el procesador (más lento, pero no falla).
+*   **Manual:** Detén el contenedor (`docker compose stop`) cuando necesites toda la VRAM para renderizar video.
+
+### 3.5. Actualización de Código no se refleja
+**Síntoma:** Haces `git pull` pero el contenedor sigue con el código viejo.
+**Solución:** Docker cachea agresivamente. Fuerza la reconstrucción:
+```bash
+docker compose build --no-cache
+docker compose up -d
+```

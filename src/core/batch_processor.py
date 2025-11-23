@@ -77,28 +77,33 @@ class BatchProcessor:
             category = ai_result.get('md_category', 'unknown')
             dest_folder = self.output_dir / category
             
-            # Lógica defensiva para creación de directorios (NAS friendly)
-            if dest_folder.exists():
+            # Lógica defensiva PARANOICA para NAS
+            try:
+                dest_folder.mkdir(parents=True, exist_ok=True)
+            except FileExistsError:
                 if dest_folder.is_file():
-                    logger.warning(f"⚠️ {dest_folder} existe y es un archivo. Renombrando...")
-                    backup_name = f"{dest_folder}_backup_{datetime.now().timestamp()}"
-                    dest_folder.rename(backup_name)
+                    logger.warning(f"⚠️ {dest_folder} es un archivo. Renombrando...")
+                    dest_folder.rename(f"{dest_folder}_backup_{datetime.now().timestamp()}")
                     dest_folder.mkdir(parents=True, exist_ok=True)
-            else:
-                try:
-                    dest_folder.mkdir(parents=True, exist_ok=True)
-                except FileExistsError:
-                    # Concurrencia o filesystem raro
-                    if dest_folder.is_file():
-                        raise # Es un archivo, error real
-                    # Si es directorio, ignoramos el error
-                    pass
-
+            
+            # Verificar que realmente existe
+            if not dest_folder.exists():
+                logger.error(f"❌ El directorio {dest_folder} no se creó correctamente.")
+                # Intentar una vez más
+                dest_folder.mkdir(parents=True, exist_ok=True)
+            
             dest_path = dest_folder / file_path.name
             
             # 3. Copiar archivo
             if not dest_path.exists():
                 shutil.copy2(file_path, dest_path)
+                
+                # Verificar copia (NAS latency)
+                import time
+                time.sleep(0.2) 
+                if not dest_path.exists():
+                     logger.error(f"❌ El archivo {dest_path} no aparece tras la copia.")
+                     raise FileNotFoundError(f"Failed to copy to {dest_path}")
             
             # 4. Inyectar Metadatos (Sobre la copia)
             # Detectar si es RAW para usar sidecar

@@ -19,12 +19,13 @@ def get_connection():
     """Conecta a la base de datos SQLite."""
     try:
         conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row # Access columns by name
         return conn
     except Exception as e:
         st.error(f"Error conectando a la DB: {e}")
         return None
 
-def load_data(limit=100, category=None, min_conf=0.0):
+def load_data(limit=100, category=None, min_conf=0.0, species=None):
     """Carga datos de la base de datos con filtros."""
     conn = get_connection()
     if not conn:
@@ -41,10 +42,19 @@ def load_data(limit=100, category=None, min_conf=0.0):
         query += " AND md_confidence >= ?"
         params.append(min_conf)
 
+    if species and species != "Todos":
+        query += " AND species_common = ?"
+        params.append(species)
+
     query += " ORDER BY capture_timestamp DESC LIMIT ?"
     params.append(limit)
 
-    df = pd.read_sql_query(query, conn, params=params)
+    try:
+        df = pd.read_sql_query(query, conn, params=params)
+    except Exception as e:
+        st.error(f"Error ejecutando query: {e}")
+        df = pd.DataFrame()
+        
     conn.close()
     return df
 
@@ -57,6 +67,19 @@ category_filter = st.sidebar.selectbox(
     "Categoría",
     ["Todos", "animal", "person", "vehicle", "empty"]
 )
+
+# Filtro de Especie (Dinámico)
+species_list = ["Todos"]
+try:
+    conn = get_connection()
+    if conn:
+        cursor = conn.execute("SELECT DISTINCT species_common FROM processed_images WHERE species_common IS NOT NULL ORDER BY species_common")
+        species_list += [row[0] for row in cursor.fetchall()]
+        conn.close()
+except Exception as e:
+    st.sidebar.warning(f"No se pudieron cargar especies: {e}")
+
+species_filter = st.sidebar.selectbox("Especie", species_list)
 
 # Filtro de Confianza
 conf_filter = st.sidebar.slider(
@@ -77,7 +100,7 @@ if st.sidebar.button("🔄 Actualizar"):
 st.title("📸 Galería de Imágenes")
 
 # Cargar datos
-df = load_data(limit=limit_filter, category=category_filter, min_conf=conf_filter)
+df = load_data(limit=limit_filter, category=category_filter, min_conf=conf_filter, species=species_filter)
 
 if df.empty:
     st.info("No se encontraron imágenes con los filtros seleccionados.")
@@ -90,10 +113,6 @@ else:
         col = cols[idx % 3]
         
         # Construir ruta de la imagen
-        # La estructura en processed es: /app/data/processed/{category}/{filename}
-        # Pero a veces el filename ya incluye la ruta relativa o solo el nombre.
-        # Asumimos que row['file_name'] es solo el nombre.
-        
         # Intentar deducir la ruta buscando en NAS y Fallback
         image_path = None
         found = False
@@ -122,12 +141,18 @@ else:
                     st.caption(f"**{row['file_name']}**")
                     st.markdown(f"**Categoría:** `{row['md_category']}` ({row['md_confidence']:.2f})")
                     
+                    # BioCLIP Species
+                    if row.get('species_common'):
+                        conf_str = f"({row['species_confidence']:.2f})" if row.get('species_confidence') else ""
+                        st.markdown(f"🧬 **{row['species_common']}**")
+                        st.caption(f"*{row['species_scientific']}* {conf_str}")
+                    elif row.get('species_prediction'):
+                         st.markdown(f"🧬 **Especie:** {row['species_prediction']}")
+
+                    # LLaVA Caption
                     if row['llava_caption']:
                         with st.expander("📝 Descripción LLaVA"):
                             st.write(row['llava_caption'])
-                            
-                    if row['species_prediction']:
-                        st.markdown(f"🧬 **Especie:** {row['species_prediction']}")
                         
                 else:
                     st.warning(f"Imagen no encontrada: {row['file_name']}")

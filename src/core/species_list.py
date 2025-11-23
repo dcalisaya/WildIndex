@@ -1,0 +1,41 @@
+# Lista de especies para BioCLIP
+# Esta lista debe ser ampliada según la región de interés.
+# Formato: "Nombre Científico (Nombre Común)"
+
+SPECIES_LIST = [
+    "Panthera onca (Jaguar)",
+    "Puma concolor (Puma)",
+    "Tapirus terrestris (Tapir)",
+    "Leopardus pardalis (Ocelote)",
+    "Leopardus wiedii (Margay)",
+    "Herpailurus yagouaroundi (Jaguarundi)",
+    "Pecari tajacu (Collared Peccary)",
+    "Tayassu pecari (White-lipped Peccary)",
+    "Mazama americana (Red Brocket Deer)",
+    "Mazama gouazoubira (Gray Brocket Deer)",
+    "Odocoileus virginianus (White-tailed Deer)",
+    "Cuniculus paca (Paca)",
+    "Dasyprocta punctata (Agouti)",
+    "Dasyprocta fuliginosa (Black Agouti)",
+    "Hydrochoerus hydrochaeris (Capybara)",
+    "Myrmecophaga tridactyla (Giant Anteater)",
+    "Tamandua tetradactyla (Southern Tamandua)",
+    "Priodontes maximus (Giant Armadillo)",
+    "Dasypus novemcinctus (Nine-banded Armadillo)",
+    "Eira barbara (Tayra)",
+    "Nasua nasua (South American Coati)",
+    "Procyon cancrivorus (Crab-eating Raccoon)",
+    "Cerdocyon thous (Crab-eating Fox)",
+    "Chrysocyon brachyurus (Maned Wolf)",
+    "Didelphis marsupialis (Common Opossum)",
+    "Sciurus igniventris (Northern Amazon Red Squirrel)",
+    "Cebus (Capuchin Monkey)",
+    "Alouatta (Howler Monkey)",
+    "Ateles (Spider Monkey)",
+    "Saimiri (Squirrel Monkey)",
+    "Crax (Curassow)",
+    "Penelope (Guan)",
+    "Tinamus (Tinamou)",
+    "Human (Persona)",
+    "Vehicle (Vehículo)"
+]

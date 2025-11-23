@@ -34,6 +34,14 @@ class MetadataInjector:
             keywords.add(metadata['md_category'])
         if metadata.get('species_prediction'):
             keywords.add(metadata['species_prediction'])
+            
+        # BioCLIP Taxonomy
+        if metadata.get('species_common'):
+            keywords.add(metadata['species_common'])
+        if metadata.get('species_scientific'):
+            keywords.add(metadata['species_scientific'])
+            # Hierarchical Subject (Lightroom/Synology friendly)
+            tags_to_write.append(f'-XMP:HierarchicalSubject+="Animal|{metadata["species_scientific"]}|{metadata["species_common"]}"')
         
         # Añadir tag de "Processed by WildIndex"
         keywords.add("WildIndex AI")

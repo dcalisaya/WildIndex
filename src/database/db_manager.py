@@ -41,6 +41,11 @@ class DatabaseManager:
             llava_caption TEXT,
             species_prediction TEXT,
             
+            -- BioCLIP Results
+            species_common TEXT,
+            species_scientific TEXT,
+            species_confidence REAL,
+            
             -- Processing Status
             status TEXT DEFAULT 'PENDING', -- 'PENDING', 'PROCESSED', 'ERROR', 'SKIPPED'
             error_message TEXT,

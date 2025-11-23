@@ -33,7 +33,11 @@ class AIEngine:
         else:
             logger.warning("⚠️ GPU no detectada. LLaVA (descripciones) estará desactivado.")
 
-    def _load_llava(self):
+        # 3. Cargar BioCLIP (Especies)
+        self.bioclip_model = None
+        self._load_bioclip()
+
+
         """Carga LLaVA-NeXT en 16-bit (más estable que 4-bit)."""
         try:
             logger.info(f"🧠 Cargando LLaVA ({self.llava_model_id}) en 16-bit...")
@@ -86,6 +90,19 @@ class AIEngine:
         # 2. Descripción (Solo si vale la pena)
         if category in ['animal', 'person'] and self.llava_model:
             result['llava_caption'] = self._generate_caption(image_path, category)
+            
+        # 3. Clasificación de Especie (BioCLIP)
+        if category == 'animal' and self.bioclip_model:
+            # Usar el bbox más confiable (MegaDetector devuelve lista, tomamos el primero/mejor?)
+            # md_result['md_bbox'] es una lista de bboxes?
+            # MegaDetector.detect devuelve el bbox de mayor confianza en 'md_bbox' (single list [x,y,w,h])
+            # Verificamos si bbox es válido
+            if result['md_bbox'] and len(result['md_bbox']) == 4:
+                species_result = self._analyze_species(image_path, result['md_bbox'])
+                if species_result:
+                    result.update(species_result)
+                    # Actualizar species_prediction para compatibilidad
+                    result['species_prediction'] = f"{species_result['species_common']} ({species_result['species_scientific']})"
 
         return result
 
@@ -129,4 +146,93 @@ class AIEngine:
             
         except Exception as e:
             logger.error(f"❌ Error generando caption LLaVA: {e}")
+            return None
+
+    def _load_bioclip(self):
+        """Carga BioCLIP para identificación de especies."""
+        try:
+            import open_clip
+            logger.info("🧬 Cargando BioCLIP (imageomics/bioclip)...")
+            model_name = 'hf-hub:imageomics/bioclip'
+            self.bioclip_model, _, self.bioclip_preprocess = open_clip.create_model_and_transforms(model_name)
+            self.bioclip_tokenizer = open_clip.get_tokenizer(model_name)
+            
+            # Mover a CPU o GPU según disponibilidad (BioCLIP es ligero, cabe en GPU junto a LLaVA 16-bit)
+            # Pero si LLaVA ocupa todo, mejor CPU. Probemos GPU primero.
+            self.bioclip_device = "cuda" if torch.cuda.is_available() else "cpu"
+            self.bioclip_model.to(self.bioclip_device)
+            
+            # Pre-computar embeddings de texto para la lista de especies
+            from src.core.species_list import SPECIES_LIST
+            self.species_labels = SPECIES_LIST
+            text_tokens = self.bioclip_tokenizer(self.species_labels).to(self.bioclip_device)
+            
+            with torch.no_grad(), torch.cuda.amp.autocast():
+                self.species_embeddings = self.bioclip_model.encode_text(text_tokens)
+                self.species_embeddings /= self.species_embeddings.norm(dim=-1, keepdim=True)
+                
+            logger.info(f"✅ BioCLIP cargado con {len(self.species_labels)} especies.")
+            
+        except Exception as e:
+            logger.error(f"❌ Error cargando BioCLIP: {e}")
+            self.bioclip_model = None
+
+    def _analyze_species(self, image_path: str, bbox: list) -> Dict[str, Any]:
+        """Clasifica la especie usando BioCLIP en el recorte del animal."""
+        if not self.bioclip_model:
+            return None
+            
+        try:
+            # 1. Abrir y Recortar
+            img = Image.open(image_path).convert("RGB")
+            width, height = img.size
+            
+            # Bbox es [x_min, y_min, width_box, height_box] normalizado (0-1)
+            # MegaDetector devuelve [x, y, w, h] (normalized)
+            x, y, w, h = bbox
+            left = x * width
+            top = y * height
+            right = (x + w) * width
+            bottom = (y + h) * height
+            
+            # Margen de seguridad (padding)
+            padding = 0.05 * max(right-left, bottom-top)
+            left = max(0, left - padding)
+            top = max(0, top - padding)
+            right = min(width, right + padding)
+            bottom = min(height, bottom + padding)
+            
+            crop = img.crop((left, top, right, bottom))
+            
+            # 2. Preprocesar
+            image_input = self.bioclip_preprocess(crop).unsqueeze(0).to(self.bioclip_device)
+            
+            # 3. Inferencia
+            with torch.no_grad(), torch.cuda.amp.autocast():
+                image_features = self.bioclip_model.encode_image(image_input)
+                image_features /= image_features.norm(dim=-1, keepdim=True)
+                
+                text_probs = (100.0 * image_features @ self.species_embeddings.T).softmax(dim=-1)
+            
+            # 4. Top 1
+            top_prob, top_idx = text_probs[0].topk(1)
+            confidence = top_prob.item()
+            label = self.species_labels[top_idx.item()]
+            
+            # Separar Científico y Común "Panthera onca (Jaguar)"
+            if "(" in label:
+                scientific = label.split("(")[0].strip()
+                common = label.split("(")[1].replace(")", "").strip()
+            else:
+                scientific = label
+                common = label
+                
+            return {
+                "species_scientific": scientific,
+                "species_common": common,
+                "species_confidence": confidence
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Error en BioCLIP: {e}")
             return None

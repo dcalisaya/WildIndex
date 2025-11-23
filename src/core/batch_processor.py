@@ -81,29 +81,29 @@ class BatchProcessor:
             try:
                 dest_folder.mkdir(parents=True, exist_ok=True)
             except FileExistsError:
+                # Si mkdir dice que existe, le creemos (aunque exists() diga que no por permisos)
                 if dest_folder.is_file():
                     logger.warning(f"⚠️ {dest_folder} es un archivo. Renombrando...")
                     dest_folder.rename(f"{dest_folder}_backup_{datetime.now().timestamp()}")
                     dest_folder.mkdir(parents=True, exist_ok=True)
+                else:
+                    logger.warning(f"⚠️ mkdir falló con FileExists pero no es archivo. Asumiendo directorio existente (NAS quirk).")
             
-            # Verificar que realmente existe
-            if not dest_folder.exists():
-                logger.error(f"❌ El directorio {dest_folder} no se creó correctamente.")
-                # Intentar una vez más
-                dest_folder.mkdir(parents=True, exist_ok=True)
-            
+            # Intentar copiar directamente. Si falla, fallará aquí.
             dest_path = dest_folder / file_path.name
             
             # 3. Copiar archivo
             if not dest_path.exists():
-                shutil.copy2(file_path, dest_path)
+                try:
+                    shutil.copy2(file_path, dest_path)
+                except Exception as e:
+                    # Si falla la copia, es el error real
+                    logger.error(f"❌ Fallo al copiar a {dest_path}: {e}")
+                    raise e
                 
                 # Verificar copia (NAS latency)
                 import time
-                time.sleep(0.2) 
-                if not dest_path.exists():
-                     logger.error(f"❌ El archivo {dest_path} no aparece tras la copia.")
-                     raise FileNotFoundError(f"Failed to copy to {dest_path}")
+                time.sleep(0.2)
             
             # 4. Inyectar Metadatos (Sobre la copia)
             # Detectar si es RAW para usar sidecar

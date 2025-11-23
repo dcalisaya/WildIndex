@@ -46,7 +46,7 @@ class AIEngine:
                 self.llava_model_id,
                 torch_dtype=torch.float16,
                 low_cpu_mem_usage=True,
-                device_map="auto"
+                device_map="cuda:0" # Forzar GPU 0 para evitar split CPU/GPU
             )
             logger.info("✅ LLaVA cargado correctamente.")
         except Exception as e:
@@ -108,12 +108,12 @@ class AIEngine:
             target_device = self.llava_model.device
             inputs = self.llava_processor(text=prompt, images=image, return_tensors="pt").to(target_device)
             
-            # Generar
+            # Generar (Configuración conservadora para evitar hangs)
             output = self.llava_model.generate(
                 **inputs, 
-                max_new_tokens=100,
-                do_sample=True,
-                temperature=0.2
+                max_new_tokens=64,
+                do_sample=False, # Greedy decoding es más rápido y estable
+                pad_token_id=self.llava_processor.tokenizer.eos_token_id
             )
             
             # Decodificar

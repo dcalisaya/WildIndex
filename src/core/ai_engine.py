@@ -20,7 +20,8 @@ class AIEngine:
         # 1. Cargar MegaDetector (Detección)
         self.md_model_path = config.get("megadetector_model_path", "models/md_v5a.0.0.pt")
         self.md_threshold = config.get("megadetector_threshold", 0.2)
-        self.megadetector = MegaDetector(self.md_model_path, self.md_threshold, self.device)
+        # Force CPU for MegaDetector to avoid CUDA conflicts/zombie states with LLaVA
+        self.megadetector = MegaDetector(self.md_model_path, self.md_threshold, device="cpu")
         
         # 2. Cargar LLaVA (Descripción) - Solo si hay GPU
         self.llava_model_id = "llava-hf/llava-v1.6-mistral-7b-hf"

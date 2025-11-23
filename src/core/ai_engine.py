@@ -23,15 +23,17 @@ class AIEngine:
         # Force CPU for MegaDetector to avoid CUDA conflicts/zombie states with LLaVA
         self.megadetector = MegaDetector(self.md_model_path, self.md_threshold, device="cpu")
         
-        # 2. Cargar LLaVA (Descripción) - Solo si hay GPU
+        # 2. Cargar LLaVA (Descripción) - TEMPORALMENTE DESACTIVADO
+        # Razón: bitsandbytes no tiene soporte CUDA en el contenedor actual
         self.llava_model_id = "llava-hf/llava-v1.6-mistral-7b-hf"
         self.llava_processor = None
         self.llava_model = None
         
-        if self.device == "cuda":
-            self._load_llava()
-        else:
-            logger.warning("⚠️ GPU no detectada. LLaVA (descripciones) estará desactivado.")
+        # if self.device == "cuda":
+        #     self._load_llava()
+        # else:
+        #     logger.warning("⚠️ GPU no detectada. LLaVA (descripciones) estará desactivado.")
+        logger.warning("⚠️ LLaVA desactivado temporalmente (bitsandbytes issue). Solo MegaDetector + BioCLIP activos.")
 
         # 3. Cargar BioCLIP (Especies)
         self.bioclip_model = None
@@ -185,29 +187,32 @@ class AIEngine:
             return None
             
         try:
-            # 1. Abrir y Recortar
+            # 1. Abrir imagen
             img = Image.open(image_path).convert("RGB")
             width, height = img.size
             
-            # Bbox es [x_min, y_min, width_box, height_box] normalizado (0-1)
-            x, y, w, h = bbox
-            
-            # Validar bbox
-            if w <= 0 or h <= 0:
-                logger.warning(f"⚠️ Bbox con dimensiones inválidas: {bbox}")
+            # MegaDetector devuelve [xmin, ymin, xmax, ymax] en píxeles absolutos
+            # Necesitamos convertir a coordenadas normalizadas
+            if len(bbox) != 4:
+                logger.warning(f"⚠️ Bbox con formato inválido: {bbox}")
                 return None
-
-            left = x * width
-            top = y * height
-            right = (x + w) * width
-            bottom = (y + h) * height
+                
+            xmin, ymin, xmax, ymax = bbox
             
-            # Margen de seguridad (padding)
-            padding = 0.05 * max(right-left, bottom-top)
-            left = max(0, left - padding)
-            top = max(0, top - padding)
-            right = min(width, right + padding)
-            bottom = min(height, bottom + padding)
+            # Validar coordenadas
+            if xmin >= xmax or ymin >= ymax:
+                logger.warning(f"⚠️ Bbox con coordenadas inválidas: {bbox}")
+                return None
+            
+            # Margen de seguridad (padding) - 5% del tamaño del bbox
+            bbox_width = xmax - xmin
+            bbox_height = ymax - ymin
+            padding = 0.05 * max(bbox_width, bbox_height)
+            
+            left = max(0, xmin - padding)
+            top = max(0, ymin - padding)
+            right = min(width, xmax + padding)
+            bottom = min(height, ymax + padding)
             
             # Validar coordenadas finales
             if left >= right or top >= bottom:

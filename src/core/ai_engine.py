@@ -37,7 +37,7 @@ class AIEngine:
         self.bioclip_model = None
         self._load_bioclip()
 
-
+    def _load_llava(self):
         """Carga LLaVA-NeXT en 16-bit (más estable que 4-bit)."""
         try:
             logger.info(f"🧠 Cargando LLaVA ({self.llava_model_id}) en 16-bit...")

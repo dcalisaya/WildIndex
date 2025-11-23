@@ -97,9 +97,19 @@ class BatchProcessor:
                 try:
                     shutil.copy2(file_path, dest_path)
                 except Exception as e:
-                    # Si falla la copia, es el error real
-                    logger.error(f"❌ Fallo al copiar a {dest_path}: {e}")
-                    raise e
+                    logger.warning(f"⚠️ Fallo al copiar a NAS ({e}). Intentando fallback local...")
+                    
+                    # FALLBACK: Usar directorio local si el NAS falla
+                    fallback_dir = Path("/app/data/processed_local") / category
+                    fallback_dir.mkdir(parents=True, exist_ok=True)
+                    dest_path = fallback_dir / file_path.name
+                    
+                    try:
+                        shutil.copy2(file_path, dest_path)
+                        logger.info(f"✅ Guardado en fallback local: {dest_path}")
+                    except Exception as e2:
+                        logger.error(f"❌ Fallo crítico al copiar a fallback {dest_path}: {e2}")
+                        raise e2
                 
                 # Verificar copia (NAS latency)
                 import time

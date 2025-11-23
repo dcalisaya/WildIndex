@@ -26,6 +26,10 @@ RUN pip install --no-cache-dir "setuptools<70.0.0" wheel
 # Clone YOLOv5 manually to bypass setuptools build issues
 RUN git clone https://github.com/ultralytics/yolov5.git /app/yolov5
 
+# Install bitsandbytes with CUDA support FIRST (before requirements.txt)
+# This ensures it compiles against the CUDA toolkit in the base image
+RUN pip install --no-cache-dir bitsandbytes>=0.41.0
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Crear directorios para datos y logs

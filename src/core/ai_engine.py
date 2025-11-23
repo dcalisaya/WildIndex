@@ -23,17 +23,15 @@ class AIEngine:
         # Force CPU for MegaDetector to avoid CUDA conflicts/zombie states with LLaVA
         self.megadetector = MegaDetector(self.md_model_path, self.md_threshold, device="cpu")
         
-        # 2. Cargar LLaVA (Descripción) - TEMPORALMENTE DESACTIVADO
-        # Razón: bitsandbytes no tiene soporte CUDA en el contenedor actual
+        # 2. Cargar LLaVA (Descripción) - Solo si hay GPU
         self.llava_model_id = "llava-hf/llava-v1.6-mistral-7b-hf"
         self.llava_processor = None
         self.llava_model = None
         
-        # if self.device == "cuda":
-        #     self._load_llava()
-        # else:
-        #     logger.warning("⚠️ GPU no detectada. LLaVA (descripciones) estará desactivado.")
-        logger.warning("⚠️ LLaVA desactivado temporalmente (bitsandbytes issue). Solo MegaDetector + BioCLIP activos.")
+        if self.device == "cuda":
+            self._load_llava()
+        else:
+            logger.warning("⚠️ GPU no detectada. LLaVA (descripciones) estará desactivado.")
 
         # 3. Cargar BioCLIP (Especies)
         self.bioclip_model = None

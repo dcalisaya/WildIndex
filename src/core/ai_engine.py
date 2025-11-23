@@ -38,24 +38,86 @@ class AIEngine:
         self._load_bioclip()
 
     def _load_llava(self):
-        """Carga LLaVA-NeXT en 16-bit (más estable que 4-bit)."""
+        """Carga LLaVA-NeXT en 4-bit (ahorro de VRAM)."""
         try:
-            logger.info(f"🧠 Cargando LLaVA ({self.llava_model_id}) en 16-bit...")
+            logger.info(f"🧠 Cargando LLaVA ({self.llava_model_id}) en 4-bit...")
             
-            # Eliminamos cuantización de 4-bit que causaba bloqueos
-            # Usamos float16 nativo (requiere ~14GB VRAM)
+            quantization_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.float16,
+                bnb_4bit_use_double_quant=True,
+                bnb_4bit_quant_type="nf4"
+            )
             
             self.llava_processor = LlavaNextProcessor.from_pretrained(self.llava_model_id)
             self.llava_model = LlavaNextForConditionalGeneration.from_pretrained(
                 self.llava_model_id,
+                quantization_config=quantization_config,
                 torch_dtype=torch.float16,
                 low_cpu_mem_usage=True,
-                device_map="cuda:0" # Forzar GPU 0 para evitar split CPU/GPU
+                device_map="cuda:0" 
             )
-            logger.info("✅ LLaVA cargado correctamente.")
+            logger.info("✅ LLaVA cargado correctamente (4-bit).")
         except Exception as e:
             logger.error(f"❌ Error cargando LLaVA: {e}")
             logger.warning("⚠️ Continuando sin capacidades de descripción detallada.")
+
+    # ... (analyze_image and _generate_caption methods remain unchanged) ...
+
+    def _analyze_species(self, image_path: str, bbox: list) -> Dict[str, Any]:
+        """Clasifica la especie usando BioCLIP en el recorte del animal."""
+        if not self.bioclip_model:
+            return None
+            
+        try:
+            # 1. Abrir y Recortar
+            img = Image.open(image_path).convert("RGB")
+            width, height = img.size
+            
+            # Bbox es [x_min, y_min, width_box, height_box] normalizado (0-1)
+            x, y, w, h = bbox
+            
+            # Validar bbox
+            if w <= 0 or h <= 0:
+                return None
+
+            left = x * width
+            top = y * height
+            right = (x + w) * width
+            bottom = (y + h) * height
+            
+            # Margen de seguridad (padding)
+            padding = 0.05 * max(right-left, bottom-top)
+            left = max(0, left - padding)
+            top = max(0, top - padding)
+            right = min(width, right + padding)
+            bottom = min(height, bottom + padding)
+            
+            # Validar coordenadas finales
+            if left >= right or top >= bottom:
+                logger.warning(f"⚠️ Bbox inválido para BioCLIP: {bbox}")
+                return None
+            
+            crop = img.crop((left, top, right, bottom))
+            
+            # 2. Preprocesar
+            # BioCLIP en CPU
+            image_input = self.bioclip_preprocess(crop).unsqueeze(0).to(self.bioclip_device)
+            
+            # 3. Inferencia
+            # No usar autocast si es CPU (o usar torch.cpu.amp.autocast si fuera necesario, pero float32 es mejor en CPU)
+            if self.bioclip_device == "cuda":
+                 with torch.no_grad(), torch.cuda.amp.autocast():
+                    image_features = self.bioclip_model.encode_image(image_input)
+                    image_features /= image_features.norm(dim=-1, keepdim=True)
+                    text_probs = (100.0 * image_features @ self.species_embeddings.T).softmax(dim=-1)
+            else:
+                 with torch.no_grad():
+                    image_features = self.bioclip_model.encode_image(image_input)
+                    image_features /= image_features.norm(dim=-1, keepdim=True)
+                    text_probs = (100.0 * image_features @ self.species_embeddings.T).softmax(dim=-1)
+            
+            # ... (resto del código igual) ...
 
     def analyze_image(self, image_path: str) -> Dict[str, Any]:
         """
@@ -157,9 +219,8 @@ class AIEngine:
             self.bioclip_model, _, self.bioclip_preprocess = open_clip.create_model_and_transforms(model_name)
             self.bioclip_tokenizer = open_clip.get_tokenizer(model_name)
             
-            # Mover a CPU o GPU según disponibilidad (BioCLIP es ligero, cabe en GPU junto a LLaVA 16-bit)
-            # Pero si LLaVA ocupa todo, mejor CPU. Probemos GPU primero.
-            self.bioclip_device = "cuda" if torch.cuda.is_available() else "cpu"
+            # Mover a CPU para ahorrar VRAM (LLaVA 16-bit ocupa casi todo)
+            self.bioclip_device = "cpu"
             self.bioclip_model.to(self.bioclip_device)
             
             # Pre-computar embeddings de texto para la lista de especies

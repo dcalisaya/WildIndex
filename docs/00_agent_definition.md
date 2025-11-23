@@ -1,16 +1,3 @@
-# ==============================================================================
-# PROYECTO: AGENTE IA DE CONSERVACIÓN AMBIENTAL
-# MÓDULO:   Orquestador Principal (orchestrator_agent.py)
-# VERSIÓN:  1.0.0
-# FECHA:    Noviembre 2025
-# DESCRIPCIÓN:
-# Agente autónomo para el procesamiento local (on-premise) de grandes volúmenes de imágenes
-# de imágenes de conservación. Utiliza modelos multimodales (MegaDetector, LLaVA,
-# CLIP) y la GPU NVIDIA RTX 5070 Ti (16GB) para la generación de metadatos ricos
-# e indexación en el NAS Synology. Prioriza la privacidad total.
-# ==============================================================================
-
-
 ## 1. 🎯 Misión y Alcance (Mission and Scope)
 
 *   **Misión del Agente:** Procesar de forma privada y local grandes volúmenes de imágenes de conservación ambiental, generar metadatos ricos (descripción, detección, embeddings), e indexar los resultados para la búsqueda avanzada y almacenamiento en NAS.
@@ -30,17 +17,22 @@ Describe la secuencia de procesamiento que el Agente Orquestador seguirá, espec
 *   **Modelo:** MegaDetector v5.
 *   **Tarea:** Identificar bounding boxes (cajas delimitadoras) para Animal, Persona, Vehículo o Vacío. Descarta imágenes "Vacías" para ahorrar tiempo de procesamiento posterior.
 
-### Descripción Detallada (Captioning & VQA):
-*   **Modelo:** LLaVA-NeXT 13B (o 34B).
-*   **Tarea:** Utiliza el bounding box del animal/objeto detectado y genera una descripción detallada (captioning) y un intento de identificación de especie (Visual Question Answering - VQA).
+### Clasificación de Especies (BioCLIP):
+*   **Modelo:** BioCLIP (`imageomics/bioclip`).
+*   **Tarea:** Clasificación taxonómica precisa (95+ especies) utilizando los recortes (crops) generados por MegaDetector.
+*   **Ejecución:** CPU (optimizado).
 
-### Extracción de Features (Embedding Generation):
-*   **Modelo:** OpenCLIP (ViT-H/14) (Aprovecha los 16GB de VRAM para un modelo más grande).
+### Descripción Detallada (Captioning & VQA) - *Desactivado Temporalmente*:
+*   **Modelo:** LLaVA-NeXT 13B (o 34B).
+*   **Tarea:** Generación de descripciones detalladas. Actualmente desactivado por dependencias de compilación CUDA (`bitsandbytes`), priorizando BioCLIP.
+
+### Extracción de Features (Embedding Generation) - *Próximamente*:
+*   **Modelo:** OpenCLIP (ViT-H/14).
 *   **Tarea:** Genera un vector de embedding de alta calidad para la búsqueda semántica.
 
 ### Indexación y Almacenamiento (Indexing & Storage):
-*   **Herramientas:** FAISS (para el índice vectorial) y SQLite/PostgreSQL (para metadatos tabulares).
-*   **Tarea:** Almacenar el embedding, la descripción, el bounding box y la ruta del NAS en una base de datos local y mover el archivo crudo a su destino final en el NAS.
+*   **Herramientas:** SQLite (metadatos), NAS (imágenes), FAISS (futuro índice vectorial).
+*   **Tarea:** Almacenar metadatos enriquecidos (XMP/IPTC) y organizar archivos.
 
 ## 3. 🧠 Componentes Clave y Modelos
 
@@ -48,12 +40,13 @@ Detalla el stack técnico necesario para la implementación local.
 
 | Tipo de Componente | Propósito | Tecnología/Modelo Recomendado |
 | :--- | :--- | :--- |
-| **Orquestación** | Gestionar la secuencia y el flujo de trabajo. | Python Scripting (Agente Principal) |
+| **Orquestación** | Gestionar la secuencia y el flujo de trabajo. | Python Scripting (BatchProcessor) |
 | **Aceleración GPU** | Aprovechar la 5070 Ti. | PyTorch + CUDA Toolkit |
 | **Detección** | Identificación de fauna. | MegaDetector v5 |
-| **Descripción/VQA** | Generación de metadatos de lenguaje. | LLaVA-NeXT 13B |
+| **Clasificación** | Identificación taxonómica de especies. | BioCLIP (CPU) |
+| **Descripción/VQA** | Generación de metadatos de lenguaje. | LLaVA-NeXT (Desactivado) |
 | **Búsqueda Semántica** | Extracción de vectores. | OpenCLIP (ViT-H/14) |
-| **Base de Datos** | Almacenamiento de embeddings y consultas rápidas. | FAISS (GPU) + ChromaDB |
+| **Base de Datos** | Almacenamiento de metadatos. | SQLite (WAL Mode) |
 
 ## 4. 🔏 Consideraciones de Privacidad y Seguridad
 

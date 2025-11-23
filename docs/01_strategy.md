@@ -49,23 +49,23 @@ Dado que hay 2 volúmenes (Producción y Respaldo):
     *   **Hyper Backup:** Configurar tarea diaria para replicar `Processed` y la DB.
     *   **Raw Archive:** (Opcional) Copia de seguridad de los crudos originales antes de procesar.
 
-## 4. Hoja de Ruta (Roadmap) Sugerida
+## 4. Hoja de Ruta (Roadmap) Actualizada
 
-### Fase 1: El "MVP Funcional" (Semanas 1-2)
+### Fase 1: El "MVP Funcional" (Completado ✅)
 *   [x] Setup del Repo Open Source.
-*   [ ] Pipeline de Ingesta + MegaDetector.
-*   [ ] **Feature Clave:** Inyección de Tags XMP (Especie).
-*   [ ] Despliegue en Docker en la máquina con GPU (montando el NAS por SMB/NFS).
-*   *Entregable:* El usuario ve que sus fotos ahora tienen etiquetas automáticas de "Animal", "Persona", "Vehículo".
+*   [x] Pipeline de Ingesta + MegaDetector.
+*   [x] **Feature Clave:** Inyección de Tags XMP (Especie).
+*   [x] Despliegue en Docker en la máquina con GPU.
 
-### Fase 2: Inteligencia Profunda (Semanas 3-4)
-*   [ ] Integración LLaVA para descripciones ("Jaguar macho con cicatriz").
-*   [ ] Inyección de descripciones en XMP.
-*   *Entregable:* Búsqueda por texto natural en el gestor de fotos.
+### Fase 2: Robustez y Clasificación (Completado ✅)
+*   [x] Integración BioCLIP para clasificación taxonómica (95 especies).
+*   [x] Dashboard de visualización y filtrado.
+*   [x] Manejo de errores y almacenamiento redundante.
 
-### Fase 3: Búsqueda Semántica (Mes 2)
+### Fase 3: Búsqueda Semántica (Próximamente)
 *   [ ] Web UI simple para búsqueda por similitud (CLIP).
 *   [ ] Publicación del caso de éxito y apertura del repo a la comunidad.
+*   [ ] Re-evaluación de LLaVA para descripciones.
 
 ## 5. Visión del Proyecto
 

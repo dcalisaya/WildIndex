@@ -34,20 +34,18 @@ class AIEngine:
             logger.warning("⚠️ GPU no detectada. LLaVA (descripciones) estará desactivado.")
 
     def _load_llava(self):
-        """Carga LLaVA-NeXT con cuantización de 4 bits para ahorrar VRAM."""
+        """Carga LLaVA-NeXT en 16-bit (más estable que 4-bit)."""
         try:
-            logger.info(f"🧠 Cargando LLaVA ({self.llava_model_id}) en 4-bit...")
+            logger.info(f"🧠 Cargando LLaVA ({self.llava_model_id}) en 16-bit...")
             
-            quantization_config = BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_quant_type="nf4",
-                bnb_4bit_compute_dtype=torch.float16,
-            )
-
+            # Eliminamos cuantización de 4-bit que causaba bloqueos
+            # Usamos float16 nativo (requiere ~14GB VRAM)
+            
             self.llava_processor = LlavaNextProcessor.from_pretrained(self.llava_model_id)
             self.llava_model = LlavaNextForConditionalGeneration.from_pretrained(
                 self.llava_model_id,
-                quantization_config=quantization_config,
+                torch_dtype=torch.float16,
+                low_cpu_mem_usage=True,
                 device_map="auto"
             )
             logger.info("✅ LLaVA cargado correctamente.")

@@ -73,25 +73,27 @@ class BatchProcessor:
             ai_result = self.ai.analyze_image(str(file_path))
             
             # 2. Preparar destino (Organizado por Fecha/Categoría)
+            # 2. Preparar destino (Organizado por Fecha/Categoría)
             category = ai_result.get('md_category', 'unknown')
             dest_folder = self.output_dir / category
-            try:
-                dest_folder.mkdir(parents=True, exist_ok=True)
-            except FileExistsError:
-                # Esto pasa si existe pero NO es un directorio (es un archivo)
-                if dest_folder.exists() and not dest_folder.is_dir():
-                    logger.warning(f"⚠️ {dest_folder} existe y es un archivo. Renombrando para crear directorio...")
-                    try:
-                        backup_name = f"{dest_folder}_backup_{datetime.now().timestamp()}"
-                        dest_folder.rename(backup_name)
-                        dest_folder.mkdir(parents=True, exist_ok=True)
-                    except Exception as e:
-                        logger.error(f"❌ Error renombrando/creando carpeta {dest_folder}: {e}")
-                        raise e
-                else:
-                    # Si es un directorio, mkdir(exist_ok=True) no debería fallar. 
-                    # Si falló, es algo raro, re-lanzamos.
-                    raise
+            
+            # Lógica defensiva para creación de directorios (NAS friendly)
+            if dest_folder.exists():
+                if dest_folder.is_file():
+                    logger.warning(f"⚠️ {dest_folder} existe y es un archivo. Renombrando...")
+                    backup_name = f"{dest_folder}_backup_{datetime.now().timestamp()}"
+                    dest_folder.rename(backup_name)
+                    dest_folder.mkdir(parents=True, exist_ok=True)
+            else:
+                try:
+                    dest_folder.mkdir(parents=True, exist_ok=True)
+                except FileExistsError:
+                    # Concurrencia o filesystem raro
+                    if dest_folder.is_file():
+                        raise # Es un archivo, error real
+                    # Si es directorio, ignoramos el error
+                    pass
+
             dest_path = dest_folder / file_path.name
             
             # 3. Copiar archivo

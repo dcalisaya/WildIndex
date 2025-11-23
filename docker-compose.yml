@@ -19,7 +19,8 @@ services:
       # Datos (Mapeo al NAS montado en el Host)
       # Asegúrate de que /mnt/nas_data esté montado en el Ubuntu Server
       - /mnt/nas_data/input:/app/data/input:ro # Solo lectura para proteger originales
-      - /mnt/nas_data/processed:/app/data/processed # Escritura para resultados
+      - /mnt/nas_data/processed:/app/data/processed # Escritura para resultados (NAS)
+      - ./data/processed_local:/app/data/processed_local # Fallback local (Persistente en Host)
 
       # Base de Datos Local (Persistencia rápida en SSD del Host)
       - ./data/db:/app/data/db
@@ -49,5 +50,6 @@ services:
     volumes:
       - ./src:/app/src
       - ./data/db:/app/data/db:ro # Read-only access to DB
-      - /mnt/nas_data/processed:/app/data/processed:ro # Read-only access to images
+      - /mnt/nas_data/processed:/app/data/processed:ro # Read-only access to images (NAS)
+      - ./data/processed_local:/app/data/processed_local:ro # Read-only access to fallback images
     command: [ "streamlit", "run", "src/ui/dashboard.py", "--server.address=0.0.0.0" ]

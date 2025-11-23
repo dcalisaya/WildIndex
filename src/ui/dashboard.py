@@ -94,13 +94,27 @@ else:
         # Pero a veces el filename ya incluye la ruta relativa o solo el nombre.
         # Asumimos que row['file_name'] es solo el nombre.
         
-        # Intentar deducir la ruta si no está explícita
-        # En batch_processor.py guardamos: dest_folder = self.output_dir / category
-        image_path = os.path.join(IMAGE_ROOT, row['md_category'], row['file_name'])
+        # Intentar deducir la ruta buscando en NAS y Fallback
+        image_path = None
+        found = False
+        
+        # Rutas posibles donde buscar
+        possible_roots = [
+            "/app/data/processed",       # NAS
+            "/app/data/processed_local"  # Fallback Local
+        ]
+        
+        for root in possible_roots:
+            # Intentar ruta: root/category/filename
+            candidate = os.path.join(root, row['md_category'], row['file_name'])
+            if os.path.exists(candidate):
+                image_path = candidate
+                found = True
+                break
         
         with col:
             try:
-                if os.path.exists(image_path):
+                if found and image_path:
                     img = Image.open(image_path)
                     st.image(img, use_container_width=True)
                     

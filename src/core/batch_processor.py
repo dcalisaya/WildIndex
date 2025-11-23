@@ -78,10 +78,20 @@ class BatchProcessor:
             try:
                 dest_folder.mkdir(parents=True, exist_ok=True)
             except FileExistsError:
-                # Esto puede pasar si 'dest_folder' existe pero es un archivo, no un directorio
-                logger.warning(f"⚠️ {dest_folder} existe y no es un directorio. Intentando renombrar...")
-                dest_folder.rename(f"{dest_folder}_backup_{datetime.now().timestamp()}")
-                dest_folder.mkdir(parents=True, exist_ok=True)
+                # Esto pasa si existe pero NO es un directorio (es un archivo)
+                if dest_folder.exists() and not dest_folder.is_dir():
+                    logger.warning(f"⚠️ {dest_folder} existe y es un archivo. Renombrando para crear directorio...")
+                    try:
+                        backup_name = f"{dest_folder}_backup_{datetime.now().timestamp()}"
+                        dest_folder.rename(backup_name)
+                        dest_folder.mkdir(parents=True, exist_ok=True)
+                    except Exception as e:
+                        logger.error(f"❌ Error renombrando/creando carpeta {dest_folder}: {e}")
+                        raise e
+                else:
+                    # Si es un directorio, mkdir(exist_ok=True) no debería fallar. 
+                    # Si falló, es algo raro, re-lanzamos.
+                    raise
             dest_path = dest_folder / file_path.name
             
             # 3. Copiar archivo

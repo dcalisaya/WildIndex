@@ -105,7 +105,9 @@ class AIEngine:
             prompt = f"[INST] <image>\n{prompt_text} [/INST]"
             
             # Pasar argumentos explícitamente
-            inputs = self.llava_processor(text=prompt, images=image, return_tensors="pt").to(self.device)
+            # Asegurar que los inputs estén en el mismo dispositivo que el modelo
+            target_device = self.llava_model.device
+            inputs = self.llava_processor(text=prompt, images=image, return_tensors="pt").to(target_device)
             
             # Generar
             output = self.llava_model.generate(

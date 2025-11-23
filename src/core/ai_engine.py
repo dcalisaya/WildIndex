@@ -11,7 +11,7 @@ logger = logging.getLogger("WildIndex.AI")
 
 class AIEngine:
     """
-    Orquestador de modelos de IA (MegaDetector, LLaVA, CLIP).
+    Orquestador de modelos de IA (MegaDetector, LLaVA, BioCLIP).
     """
     def __init__(self, config: Dict[str, Any]):
         self.config = config
@@ -62,68 +62,12 @@ class AIEngine:
             logger.error(f"❌ Error cargando LLaVA: {e}")
             logger.warning("⚠️ Continuando sin capacidades de descripción detallada.")
 
-    # ... (analyze_image and _generate_caption methods remain unchanged) ...
-
-    def _analyze_species(self, image_path: str, bbox: list) -> Dict[str, Any]:
-        """Clasifica la especie usando BioCLIP en el recorte del animal."""
-        if not self.bioclip_model:
-            return None
-            
-        try:
-            # 1. Abrir y Recortar
-            img = Image.open(image_path).convert("RGB")
-            width, height = img.size
-            
-            # Bbox es [x_min, y_min, width_box, height_box] normalizado (0-1)
-            x, y, w, h = bbox
-            
-            # Validar bbox
-            if w <= 0 or h <= 0:
-                return None
-
-            left = x * width
-            top = y * height
-            right = (x + w) * width
-            bottom = (y + h) * height
-            
-            # Margen de seguridad (padding)
-            padding = 0.05 * max(right-left, bottom-top)
-            left = max(0, left - padding)
-            top = max(0, top - padding)
-            right = min(width, right + padding)
-            bottom = min(height, bottom + padding)
-            
-            # Validar coordenadas finales
-            if left >= right or top >= bottom:
-                logger.warning(f"⚠️ Bbox inválido para BioCLIP: {bbox}")
-                return None
-            
-            crop = img.crop((left, top, right, bottom))
-            
-            # 2. Preprocesar
-            # BioCLIP en CPU
-            image_input = self.bioclip_preprocess(crop).unsqueeze(0).to(self.bioclip_device)
-            
-            # 3. Inferencia
-            # No usar autocast si es CPU (o usar torch.cpu.amp.autocast si fuera necesario, pero float32 es mejor en CPU)
-            if self.bioclip_device == "cuda":
-                 with torch.no_grad(), torch.cuda.amp.autocast():
-                    image_features = self.bioclip_model.encode_image(image_input)
-                    image_features /= image_features.norm(dim=-1, keepdim=True)
-                    text_probs = (100.0 * image_features @ self.species_embeddings.T).softmax(dim=-1)
-            else:
-                 with torch.no_grad():
-                    image_features = self.bioclip_model.encode_image(image_input)
-                    image_features /= image_features.norm(dim=-1, keepdim=True)
-                    text_probs = (100.0 * image_features @ self.species_embeddings.T).softmax(dim=-1)
-            
-            # ... (resto del código igual) ...
-
     def analyze_image(self, image_path: str) -> Dict[str, Any]:
         """
         Pipeline principal:
         1. MegaDetector -> Detectar si hay algo.
         2. Si hay animal/persona -> LLaVA -> Describir qué hace.
+        3. Si hay animal -> BioCLIP -> Clasificar especie.
         """
         # 1. Detección
         md_result = self.megadetector.detect(image_path)
@@ -146,7 +90,7 @@ class AIEngine:
             "md_confidence": md_result['md_confidence'],
             "md_bbox": md_result['md_bbox'],
             "llava_caption": None,
-            "species_prediction": None # TODO: Fase 3 (Clasificador específico)
+            "species_prediction": None
         }
 
         # 2. Descripción (Solo si vale la pena)
@@ -155,10 +99,6 @@ class AIEngine:
             
         # 3. Clasificación de Especie (BioCLIP)
         if category == 'animal' and self.bioclip_model:
-            # Usar el bbox más confiable (MegaDetector devuelve lista, tomamos el primero/mejor?)
-            # md_result['md_bbox'] es una lista de bboxes?
-            # MegaDetector.detect devuelve el bbox de mayor confianza en 'md_bbox' (single list [x,y,w,h])
-            # Verificamos si bbox es válido
             if result['md_bbox'] and len(result['md_bbox']) == 4:
                 species_result = self._analyze_species(image_path, result['md_bbox'])
                 if species_result:
@@ -219,7 +159,7 @@ class AIEngine:
             self.bioclip_model, _, self.bioclip_preprocess = open_clip.create_model_and_transforms(model_name)
             self.bioclip_tokenizer = open_clip.get_tokenizer(model_name)
             
-            # Mover a CPU para ahorrar VRAM (LLaVA 16-bit ocupa casi todo)
+            # Mover a CPU para ahorrar VRAM (LLaVA 4-bit ocupa ~7GB)
             self.bioclip_device = "cpu"
             self.bioclip_model.to(self.bioclip_device)
             
@@ -228,7 +168,8 @@ class AIEngine:
             self.species_labels = SPECIES_LIST
             text_tokens = self.bioclip_tokenizer(self.species_labels).to(self.bioclip_device)
             
-            with torch.no_grad(), torch.cuda.amp.autocast():
+            # No usar autocast en CPU
+            with torch.no_grad():
                 self.species_embeddings = self.bioclip_model.encode_text(text_tokens)
                 self.species_embeddings /= self.species_embeddings.norm(dim=-1, keepdim=True)
                 
@@ -249,8 +190,13 @@ class AIEngine:
             width, height = img.size
             
             # Bbox es [x_min, y_min, width_box, height_box] normalizado (0-1)
-            # MegaDetector devuelve [x, y, w, h] (normalized)
             x, y, w, h = bbox
+            
+            # Validar bbox
+            if w <= 0 or h <= 0:
+                logger.warning(f"⚠️ Bbox con dimensiones inválidas: {bbox}")
+                return None
+
             left = x * width
             top = y * height
             right = (x + w) * width
@@ -263,16 +209,20 @@ class AIEngine:
             right = min(width, right + padding)
             bottom = min(height, bottom + padding)
             
+            # Validar coordenadas finales
+            if left >= right or top >= bottom:
+                logger.warning(f"⚠️ Bbox inválido después de padding: {bbox}")
+                return None
+            
             crop = img.crop((left, top, right, bottom))
             
             # 2. Preprocesar
             image_input = self.bioclip_preprocess(crop).unsqueeze(0).to(self.bioclip_device)
             
-            # 3. Inferencia
-            with torch.no_grad(), torch.cuda.amp.autocast():
+            # 3. Inferencia (CPU, sin autocast)
+            with torch.no_grad():
                 image_features = self.bioclip_model.encode_image(image_input)
                 image_features /= image_features.norm(dim=-1, keepdim=True)
-                
                 text_probs = (100.0 * image_features @ self.species_embeddings.T).softmax(dim=-1)
             
             # 4. Top 1
